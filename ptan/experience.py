@@ -3,6 +3,7 @@ import torch
 import random
 import collections
 from torch.autograd import Variable
+from gymnasium.utils.step_api_compatibility import step_api_compatibility
 
 import numpy as np
 
@@ -89,9 +90,9 @@ class ExperienceSource:
             global_ofs = 0
             for env_idx, (env, action_n) in enumerate(zip(self.pool, grouped_actions)):
                 if self.vectorized:
-                    next_state_n, r_n, is_done_n, _ = env.step(action_n)
+                    next_state_n, r_n, is_done_n, _ =  step_api_compatibility(env.step(action_n), output_truncation_bool=False)
                 else:
-                    next_state, r, is_done, _ = env.step(action_n[0])
+                    next_state, r, is_done, _ = step_api_compatibility(env.step(action_n[0]), output_truncation_bool=False)
                     next_state_n, r_n, is_done_n = [next_state], [r], [is_done]
 
                 for ofs, (action, next_state, r, is_done) in enumerate(zip(action_n, next_state_n, r_n, is_done_n)):
@@ -119,7 +120,7 @@ class ExperienceSource:
                         cur_rewards[idx] = 0.0
                         cur_steps[idx] = 0
                         # vectorized envs are reset automatically
-                        states[idx] = env.reset() if not self.vectorized else None
+                        states[idx], _ = env.reset() if not self.vectorized else None
                         agent_states[idx] = self.agent.initial_state()
                         history.clear()
                 global_ofs += len(action_n)
