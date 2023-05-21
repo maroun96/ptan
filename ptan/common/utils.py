@@ -342,29 +342,29 @@ class RewardTracker:
 
     def __enter__(self):
         self.ts = time.time()
-        self.ts_frame = 0
+        self.ts_step = 0
         self.total_rewards = []
         return self
 
     def __exit__(self, *args):
         self.writer.close()
 
-    def reward(self, reward, frame, epsilon=None):
+    def reward(self, reward, step_idx, epsilon=None):
         self.total_rewards.append(reward)
         mean_reward = np.mean(self.total_rewards[-100:])
         ts_diff = time.time() - self.ts
         if ts_diff > self.min_ts_diff:
-            speed = (frame - self.ts_frame) / ts_diff
-            self.ts_frame = frame
+            speed = (step_idx - self.ts_step) / ts_diff
+            self.ts_step = step_idx
             self.ts = time.time()
             epsilon_str = "" if epsilon is None else ", eps %.2f" % epsilon
             print("%d: done %d episodes, mean reward %.3f, speed %.2f f/s%s" % (
-                frame, len(self.total_rewards), mean_reward, speed, epsilon_str
+                step_idx, len(self.total_rewards), mean_reward, speed, epsilon_str
             ))
             sys.stdout.flush()
-            self.writer.add_scalar("speed", speed, frame)
+            self.writer.add_scalar("speed", speed, step_idx)
         if epsilon is not None:
-            self.writer.add_scalar("epsilon", epsilon, frame)
-        self.writer.add_scalar("reward_100", mean_reward, frame)
-        self.writer.add_scalar("reward", reward, frame)
+            self.writer.add_scalar("epsilon", epsilon, step_idx)
+        self.writer.add_scalar("reward_100", mean_reward, step_idx)
+        self.writer.add_scalar("reward", reward, step_idx)
         return mean_reward if len(self.total_rewards) > 30 else None
